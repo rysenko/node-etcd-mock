@@ -1,6 +1,6 @@
 {
   "name": "node-etcd-mock",
-  "version": "0.9.3",
+  "version": "0.9.5",
   "description": "Simplified in-memory mock for Etcd",
   "devDependencies": {
     "babel": "^5.8.23",
