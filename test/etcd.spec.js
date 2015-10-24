@@ -1,5 +1,5 @@
 import assert from 'assert';
-import Etcd from '../lib/etcd';
+import Etcd from '../src/etcd';
 
 describe('Etcd mock', function() {
   before(function() {

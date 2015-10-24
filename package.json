@@ -1,6 +1,6 @@
 {
   "name": "node-etcd-mock",
-  "version": "0.9.1",
+  "version": "0.9.3",
   "description": "Simplified in-memory mock for Etcd",
   "devDependencies": {
     "babel": "^5.8.23",
@@ -10,11 +10,13 @@
     "node-etcd": "^4.2.1"
   },
   "license": "MIT",
+  "main": "lib/etcd.js",
   "repository": {
     "type": "git",
     "url": "git@github.com:rysenko/node-etcd-mock"
   },
   "scripts": {
-    "test": "mocha ./test"
+    "test": "mocha ./test",
+    "prepublish": "babel -d lib/ src/"
   }
 }

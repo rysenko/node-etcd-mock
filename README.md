@@ -9,4 +9,4 @@ get
 set
 ```
 
-Options for methods aren't supported.
+Only ```recursive``` option is now supported.
