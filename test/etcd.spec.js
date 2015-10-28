@@ -33,4 +33,11 @@ describe('Etcd mock', function() {
       done();
     });
   });
+  it('should not get non-existing', function(done) {
+    this.client.get('/root/some', (err) => {
+      assert(err);
+      assert.equal(err.errorCode, 100);
+      done();
+    });
+  });
 });

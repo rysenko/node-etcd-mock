@@ -2,9 +2,12 @@ class Client {
   constructor() {
     this.storage = {};
   }
-  _traverseNode(keyParts) {
+  _traverseNode(keyParts, createNodes = true) {
     return keyParts.reduce((storageNode, keyPart) => {
-      if (!storageNode[keyPart]) {
+      if (typeof storageNode === 'undefined') {
+        return storageNode;
+      }
+      if (!storageNode[keyPart] && createNodes) {
         storageNode[keyPart] = {};
       }
       return storageNode[keyPart];
@@ -27,7 +30,10 @@ class Client {
     const keyParts = options.path.split('/').filter(key => key).splice(2);
     const keyPath = '/' + keyParts.join('/');
     const lastPart = keyParts.splice(keyParts.length - 1, 1)[0];
-    const targetNode = this._traverseNode(keyParts);
+    const targetNode = this._traverseNode(keyParts, false);
+    if (typeof targetNode === 'undefined' || typeof targetNode[lastPart] === 'undefined') {
+      return setImmediate(() => callback({errorCode: 100, message: 'Key not found', cause: keyPath}));
+    }
     const resultNode = this._transformNode(keyPath, targetNode[lastPart], options.qs.recursive ? Number.MAX_VALUE : 1);
     setImmediate(() => callback(null, {actions: 'get', node: resultNode}));
   }
