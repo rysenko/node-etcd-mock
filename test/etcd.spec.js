@@ -15,6 +15,20 @@ describe('Etcd mock', function() {
       done();
     });
   });
+  it('should not set dir', function(done) {
+    this.client.set('/root/child/sub/another', 'value', (err) => {
+      assert(err);
+      assert.equal(err.errorCode, 104);
+      done();
+    });
+  });
+  it('should not set file', function(done) {
+    this.client.set('/root/child', 'value', (err) => {
+      assert(err);
+      assert.equal(err.errorCode, 102);
+      done();
+    });
+  });
   it('should get root', function(done) {
     this.client.get('/root', (err, result) => {
       assert.ifError(err);

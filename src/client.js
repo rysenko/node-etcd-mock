@@ -1,48 +1,55 @@
 class Client {
   constructor() {
-    this.storage = {};
+    this.index = 1;
+    this.storage = {key: '', dir: true, nodes: []};
   }
-  _traverseNode(keyParts, createNodes = true) {
-    return keyParts.reduce((storageNode, keyPart) => {
-      if (typeof storageNode === 'undefined') {
-        return storageNode;
-      }
-      if (!storageNode[keyPart] && createNodes) {
-        storageNode[keyPart] = {};
-      }
-      return storageNode[keyPart];
-    }, this.storage);
-  }
-  _transformNode(path, node, levels = 1) {
-    if (typeof node === 'string') {
-      return {key: path, value: node};
+  _findNode(node, keyParts, value) {
+    if (keyParts.length === 0) {
+      return node;
     }
-    const result = {key: path, dir: true};
-    if (levels > 0) {
-      result.nodes = [];
-      for (let key of Object.keys(node)) {
-        result.nodes.push(this._transformNode(path + '/' + key, node[key], levels - 1));
+    const keyPart = keyParts[0];
+    const isLastKey = keyParts.length === 1;
+    const childNode = node.nodes.find(node => node.key.endsWith('/' + keyPart));
+    if (childNode && !childNode.dir && !isLastKey) {
+      return {errorCode: 104, message: 'Not a directory', cause: childNode.key, index: childNode.modifiedIndex};
+    }
+    if (isLastKey && typeof value !== 'undefined') { // setting the value
+      if (childNode && childNode.dir) {
+        return {errorCode: 102, message: 'Not a file', cause: childNode.key, index: childNode.modifiedIndex};
+      } else if (childNode) {
+        childNode.value = value;
+        childNode.modifiedIndex = this.index;
+      } else {
+        node.nodes.push({key: node.key + '/' + keyPart, value, createdIndex: this.index, modifiedIndex: this.index});
+        return node.nodes[node.nodes.length - 1];
       }
     }
-    return result;
+    if (!childNode) {
+      if (typeof value !== 'undefined') {
+        node.nodes.push({key: node.key + '/' + keyPart, dir: true, nodes: [], createdIndex: this.index, modifiedIndex: this.index});
+        return this._findNode(node.nodes[node.nodes.length - 1], keyParts.slice(1), value);
+      }
+      return {errorCode: 100, message: 'Key not found', cause: node.key};
+    }
+    return this._findNode(childNode, keyParts.slice(1), value);
   }
   get(options, callback) {
     const keyParts = options.path.split('/').filter(key => key).splice(2);
-    const keyPath = '/' + keyParts.join('/');
-    const lastPart = keyParts.splice(keyParts.length - 1, 1)[0];
-    const targetNode = this._traverseNode(keyParts, false);
-    if (typeof targetNode === 'undefined' || typeof targetNode[lastPart] === 'undefined') {
-      return setImmediate(() => callback({errorCode: 100, message: 'Key not found', cause: keyPath}));
+    let resultNode = this._findNode(this.storage, keyParts);
+    if (resultNode.nodes && !options.qs.recursive) {
+      resultNode = Object.create(resultNode, {nodes: {value: resultNode.nodes.map(node => {
+        return Object.create(node, {nodes: {value: undefined}});
+      })}});
     }
-    const resultNode = this._transformNode(keyPath, targetNode[lastPart], options.qs.recursive ? Number.MAX_VALUE : 1);
-    setImmediate(() => callback(null, {actions: 'get', node: resultNode}));
+    setImmediate(() => callback(resultNode.errorCode && resultNode, !resultNode.errorCode && {action: 'get', node: resultNode}));
   }
   put(options, callback) {
     const keyParts = options.path.split('/').filter(key => key).splice(2);
-    const lastPart = keyParts.splice(keyParts.length - 1, 1)[0];
-    const targetNode = this._traverseNode(keyParts);
-    targetNode[lastPart] = String(options.form.value);
-    setImmediate(() => callback(null));
+    const targetNode = this._findNode(this.storage, keyParts, options.form.value + '');
+    if (!targetNode.errorCode) {
+      this.index++;
+    }
+    setImmediate(() => callback(targetNode.errorCode && targetNode, !targetNode.errorCode && {action: 'set', node: targetNode}));
   }
 }
 
