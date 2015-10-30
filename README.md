@@ -7,6 +7,7 @@
 ```
 get
 set
+del
 ```
 
 Only ```recursive``` option is now supported.

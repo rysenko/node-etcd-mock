@@ -54,4 +54,10 @@ describe('Etcd mock', function() {
       done();
     });
   });
+  it('should delete', function(done) {
+    this.client.del('/root/child/sub', function(err) {
+      assert.ifError(err);
+      done();
+    });
+  })
 });
